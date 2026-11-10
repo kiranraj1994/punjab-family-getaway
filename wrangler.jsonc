@@ -1,0 +1,31 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "punjab-family-getaway",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-10-01",
+  "observability": { "enabled": true },
+  // The built React app. Unknown paths fall back to index.html so /admin/... deep links work.
+  // Only /api/* reaches the Worker code; everything else is served as a static file.
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "punjab-trip-db",
+      // Replace with the id printed by: npx wrangler d1 create punjab-trip-db
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "migrations"
+    }
+  ],
+  // Non-secret settings. Secrets (ADMIN_PASSWORD, SESSION_SECRET, AI keys) are set with
+  // `wrangler secret put` and never stored in this file.
+  "vars": {
+    "AI_PROVIDER": "none",
+    "ANTHROPIC_MODEL": "claude-haiku-5-5",
+    "GEMINI_MODEL": "gemini-2.5-flash"
+  }
+}

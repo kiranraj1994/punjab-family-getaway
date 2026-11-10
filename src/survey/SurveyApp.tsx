@@ -9,6 +9,7 @@ import { Icon, type IconName } from "../components/Icon";
 import { Photo } from "../components/Photo";
 import { photoCredits } from "../lib/photos";
 import { submitSurvey } from "../lib/api";
+import { IS_PREVIEW } from "../lib/env";
 import { clearDraft, loadDraft, newSubmissionId, saveDraft } from "../lib/draft";
 import { ActivityCard, Chip, ChipGroup, ChoiceGroup, Field, Notice, Question, Select, StepHeader, TextArea, TextInput } from "./ui";
 
@@ -533,7 +534,7 @@ function ThankYou({ name, onRestart }: { name: string; onRestart: () => void }) 
           <span className="mb-1 block text-xs font-semibold uppercase tracking-[0.18em] text-gold-300">What happens next</span>
           {ITINERARY_NOTE}
         </p>
-        <p className="mx-auto mt-8 w-fit rounded-full border border-gold-300/40 bg-gold-300/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-gold-200">UI preview – this response was not saved</p>
+        {IS_PREVIEW && <p className="mx-auto mt-8 w-fit rounded-full border border-gold-300/40 bg-gold-300/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-gold-200">UI preview – this response was not saved</p>}
         <button type="button" onClick={onRestart} className="mt-8 block w-full text-sm font-medium text-ivory/70 underline underline-offset-4 hover:text-ivory">
           Someone else on this phone? Start a new response
         </button>

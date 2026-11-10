@@ -2,17 +2,21 @@ import { useMemo, useState, type ReactNode } from "react";
 import type { Analytics } from "@shared/analytics";
 import {
   ACCOMMODATION_BUDGETS, ACCOMMODATION_TYPES, ACTIVITY_BUDGETS, CATEGORIES, CHANDIGARH_OPTIONS, DATE_OPTIONS,
-  FACILITIES, PACE_OPTIONS, PLATFORMS, TRIP, YES_NO_UNSURE, activityTitle, labelOf, type Option, type SurveyResponse,
+  FACILITIES, PACE_OPTIONS, PLATFORMS, PRIORITY_COUNT, TRIP, YES_NO_UNSURE, activityTitle, labelOf, type CategoryKey, type Option, type SurveyResponse,
 } from "@shared/trip";
 import { Icon } from "../components/Icon";
-import { toCsv } from "../lib/csv";
-import { IS_PREVIEW } from "../lib/env";
+import type { AdminSettings, AiStatus, AssistantReply } from "./api";
+import { ReplyBody } from "./Assistant";
 import { Awaiting, BarList, Card, Columns, Donut, Kpi, Modal, Pill, SERIES, btn, input } from "./charts";
 
 export interface PageProps {
   rows: SurveyResponse[];
   a: Analytics;
-  setRows: (fn: (rows: SurveyResponse[]) => SurveyResponse[]) => void;
+  demo: boolean;
+  onSave: (response: SurveyResponse) => Promise<void>;
+  onDelete: (submissionId: string) => Promise<void>;
+  /** Live app downloads a file and resolves to nothing; the design preview resolves to CSV text. */
+  onExport: (ids?: string[]) => Promise<string | void>;
 }
 
 const INVITED_ADULTS = 11;
@@ -77,7 +81,7 @@ function FilterSelect({ label, value, onChange, options }: { label: string; valu
   );
 }
 
-export function Responses({ rows, setRows }: PageProps) {
+export function Responses({ rows, onSave, onDelete, onExport }: PageProps) {
   const [q, setQ] = useState("");
   const [fDate, setFDate] = useState("");
   const [fPace, setFPace] = useState("");
@@ -98,13 +102,15 @@ export function Responses({ rows, setRows }: PageProps) {
   }, [rows, q, fDate, fPace, fStay, sort]);
 
   const allPicked = shown.length > 0 && shown.every((r) => picked.includes(r.submission_id));
-  const exportRows = (list: SurveyResponse[]) => {
-    const text = toCsv(list);
-    if (IS_PREVIEW) return setCsv(text);
-    const url = URL.createObjectURL(new Blob(["﻿", text], { type: "text/csv;charset=utf-8" }));
-    const link = Object.assign(document.createElement("a"), { href: url, download: `punjab-trip-responses-${new Date().toISOString().slice(0, 10)}.csv` });
-    link.click();
-    URL.revokeObjectURL(url);
+  const [busy, setBusy] = useState(false);
+  const exportRows = async (ids?: string[]) => {
+    setBusy(true);
+    try {
+      const text = await onExport(ids);
+      if (typeof text === "string") setCsv(text);
+    } finally {
+      setBusy(false);
+    }
   };
   const head = (key: SortKey, label: string) => (
     <button type="button" onClick={() => setSort((s) => ({ key, dir: s.key === key ? (s.dir === 1 ? -1 : 1) : 1 }))} className="inline-flex items-center gap-1 font-semibold uppercase tracking-wider hover:text-forest-900">
@@ -117,10 +123,10 @@ export function Responses({ rows, setRows }: PageProps) {
     <>
       <PageTitle eyebrow={`${rows.length} submitted`} title="Family Responses">
         <div className="flex flex-wrap gap-2">
-          <button type="button" className={btn.ghost} disabled={!picked.length} onClick={() => exportRows(rows.filter((r) => picked.includes(r.submission_id)))}>
+          <button type="button" className={btn.ghost} disabled={!picked.length || busy} onClick={() => exportRows(picked)}>
             <Icon name="download" size={16} /> Export selected ({picked.length})
           </button>
-          <button type="button" className={btn.primary} disabled={!rows.length} onClick={() => exportRows(rows)}>
+          <button type="button" className={btn.primary} disabled={!rows.length || busy} onClick={() => exportRows()}>
             <Icon name="download" size={16} /> Export CSV
           </button>
         </div>
@@ -215,7 +221,7 @@ export function Responses({ rows, setRows }: PageProps) {
         <EditResponse
           r={editing}
           onClose={() => setEditing(null)}
-          onSave={(next) => { setRows((list) => list.map((x) => (x.submission_id === next.submission_id ? next : x))); setEditing(null); }}
+          onSave={async (next) => { await onSave(next); setEditing(null); }}
         />
       )}
       {deleting && (
@@ -225,7 +231,7 @@ export function Responses({ rows, setRows }: PageProps) {
           </p>
           <div className="mt-6 flex justify-end gap-2">
             <button type="button" className={btn.ghost} onClick={() => setDeleting(null)}>Keep response</button>
-            <button type="button" className={btn.danger} onClick={() => { setRows((list) => list.filter((x) => x.submission_id !== deleting.submission_id)); setPicked((p) => p.filter((x) => x !== deleting.submission_id)); setDeleting(null); }}>
+            <button type="button" className={btn.danger} disabled={busy} onClick={async () => { setBusy(true); try { await onDelete(deleting.submission_id); setPicked((p) => p.filter((x) => x !== deleting.submission_id)); setDeleting(null); } finally { setBusy(false); } }}>
               <Icon name="trash" size={16} /> Delete response
             </button>
           </div>
@@ -301,13 +307,34 @@ function ResponseDetail({ r, onClose, onEdit }: { r: SurveyResponse; onClose: ()
   );
 }
 
-function EditResponse({ r, onClose, onSave }: { r: SurveyResponse; onClose: () => void; onSave: (r: SurveyResponse) => void }) {
+function Toggles({ label, options, values, onChange, max }: { label: string; options: Option[]; values: string[]; onChange: (v: string[]) => void; max?: number }) {
+  const full = max !== undefined && values.length >= max;
+  return (
+    <fieldset className="sm:col-span-2">
+      <legend className="mb-1.5 text-sm font-medium text-forest-900">{label}{max !== undefined && <span className={`ml-2 text-xs font-normal ${values.length === max ? "text-muted" : "text-rose-600"}`}>{values.length} of {max} chosen</span>}</legend>
+      <div className="flex flex-wrap gap-1.5">
+        {options.map((o) => {
+          const on = values.includes(o.id);
+          return (
+            <button key={o.id} type="button" aria-pressed={on} disabled={!on && full} onClick={() => onChange(on ? values.filter((v) => v !== o.id) : [...values, o.id])} className={`rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${on ? "border-forest-800 bg-forest-800 text-ivory" : "border-sand bg-white text-ink hover:border-gold-400 disabled:opacity-40"}`}>
+              {o.label}
+            </button>
+          );
+        })}
+      </div>
+    </fieldset>
+  );
+}
+
+function EditResponse({ r, onClose, onSave }: { r: SurveyResponse; onClose: () => void; onSave: (r: SurveyResponse) => Promise<void> }) {
   const [d, setD] = useState(r);
-  const sel = (label: string, key: "date_confirmation" | "accommodation_type" | "accommodation_budget" | "trip_pace" | "activity_budget" | "chandigarh_preference", options: Option[]) => (
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const sel = (label: string, key: "date_confirmation" | "accommodation_type" | "accommodation_budget" | "trip_pace" | "activity_budget" | "chandigarh_preference", options: Option[], required = false) => (
     <label className="block text-sm font-medium text-forest-900">
       {label}
       <select value={d[key]} onChange={(e) => setD({ ...d, [key]: e.target.value })} className={`${input} mt-1.5`}>
-        <option value="">Not answered</option>
+        {!required && <option value="">Not answered</option>}
         {options.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
       </select>
     </label>
@@ -318,26 +345,44 @@ function EditResponse({ r, onClose, onSave }: { r: SurveyResponse; onClose: () =
       <textarea rows={2} value={d[key]} onChange={(e) => setD({ ...d, [key]: e.target.value })} className={`${input} mt-1.5`} />
     </label>
   );
+  const many = (label: string, key: CategoryKey | "accommodation_facilities" | "top_three_priorities", options: Option[], max?: number) => (
+    <Toggles key={key} label={label} options={options} values={d[key]} max={max} onChange={(v) => setD({ ...d, [key]: v })} />
+  );
+  const valid = d.respondent_name.trim() && d.date_confirmation && d.top_three_priorities.length === PRIORITY_COUNT;
+  const save = async () => {
+    setSaving(true);
+    setError(null);
+    try {
+      await onSave(d);
+    } catch (e) {
+      setError((e as Error).message || "The change could not be saved.");
+      setSaving(false);
+    }
+  };
   return (
     <Modal title="Edit response" onClose={onClose} wide>
       <div className="grid gap-4 sm:grid-cols-2">
-        <label className="block text-sm font-medium text-forest-900">Respondent name<input value={d.respondent_name} onChange={(e) => setD({ ...d, respondent_name: e.target.value })} className={`${input} mt-1.5`} /></label>
-        <label className="block text-sm font-medium text-forest-900">Contact number<input value={d.contact_number} onChange={(e) => setD({ ...d, contact_number: e.target.value })} className={`${input} mt-1.5`} /></label>
-        {sel("Dates", "date_confirmation", DATE_OPTIONS)}
+        <label className="block text-sm font-medium text-forest-900">Respondent name<input value={d.respondent_name} maxLength={80} onChange={(e) => setD({ ...d, respondent_name: e.target.value })} className={`${input} mt-1.5`} /></label>
+        <label className="block text-sm font-medium text-forest-900">Contact number<input value={d.contact_number} maxLength={20} onChange={(e) => setD({ ...d, contact_number: e.target.value })} className={`${input} mt-1.5`} /></label>
+        {sel("Dates", "date_confirmation", DATE_OPTIONS, true)}
         {sel("Accommodation", "accommodation_type", ACCOMMODATION_TYPES)}
         {sel("Room budget", "accommodation_budget", ACCOMMODATION_BUDGETS)}
         {sel("Trip pace", "trip_pace", PACE_OPTIONS)}
         {sel("Activity budget", "activity_budget", ACTIVITY_BUDGETS)}
         {sel("Chandigarh", "chandigarh_preference", CHANDIGARH_OPTIONS)}
+        {many("Facilities", "accommodation_facilities", FACILITIES)}
+        {CATEGORIES.map((c) => many(c.shortTitle, c.key, c.activities.map((x) => ({ id: x.id, label: x.title }))))}
+        {many("Top 3 priorities", "top_three_priorities", CATEGORIES.flatMap((c) => c.activities).map((x) => ({ id: x.id, label: x.title })), PRIORITY_COUNT)}
         {area("Accommodation notes", "additional_accommodation_requirements")}
         {area("Suggestions", "additional_suggestions")}
         {area("Child & family requirements", "child_family_requirements")}
       </div>
-      <div className="mt-6 flex items-center justify-between gap-2">
-        <p className="text-xs text-muted">Edits are recorded in the audit log.</p>
-        <div className="flex gap-2">
+      {error && <p role="alert" className="mt-4 rounded-xl bg-rose-600/10 px-3.5 py-2.5 text-sm font-medium text-rose-600">{error}</p>}
+      <div className="mt-6 flex items-center justify-between gap-3">
+        <p className="text-xs text-muted">Edits are recorded in the audit log (field names only). Suggested properties are not editable here.</p>
+        <div className="flex shrink-0 gap-2">
           <button type="button" className={btn.ghost} onClick={onClose}>Cancel</button>
-          <button type="button" className={btn.primary} disabled={!d.respondent_name.trim()} onClick={() => onSave({ ...d, updated_at: new Date().toISOString() })}>Save changes</button>
+          <button type="button" className={btn.primary} disabled={!valid || saving} onClick={save}>{saving ? "Saving…" : "Save changes"}</button>
         </div>
       </div>
     </Modal>
@@ -460,7 +505,19 @@ function Fact() {
   return <Pill tone="forest"><Icon name="check" size={12} stroke={2.6} /> Survey fact</Pill>;
 }
 
-export function Insights({ a }: PageProps) {
+const RECOMMEND_PROMPT = "Based on all the responses, which activities and accommodation criteria should the organiser prioritise, and what should be decided next?";
+
+export function Insights({ a, ai, onAsk }: PageProps & { ai: AiStatus | null; onAsk: (question: string) => Promise<AssistantReply | null> }) {
+  const [reply, setReply] = useState<AssistantReply | null>(null);
+  const [asking, setAsking] = useState(false);
+  const recommend = async () => {
+    setAsking(true);
+    try {
+      setReply(await onAsk(RECOMMEND_PROMPT));
+    } finally {
+      setAsking(false);
+    }
+  };
   const lists: [string, string, typeof a.consensus.agreed, "forest" | "gold" | "muted"][] = [
     ["Strong agreement", "Chosen by 70% or more", a.consensus.agreed, "forest"],
     ["Family is divided", "Chosen by 40–60%", a.consensus.divided, "gold"],
@@ -499,9 +556,21 @@ export function Insights({ a }: PageProps) {
             <h2 className="font-display text-[1.45rem] font-semibold text-forest-900">Recommendations</h2>
             <Pill tone="saffron"><Icon name="spark" size={12} /> AI suggestion – not a survey fact</Pill>
           </div>
-          <p className="max-w-3xl text-sm leading-relaxed text-ink">
-            AI-written recommendations will always appear in a gold dashed panel like this one, separate from the facts above. No AI provider is connected in this preview, so no recommendation has been generated.
-          </p>
+          {reply?.answer ? (
+            <p className="max-w-3xl whitespace-pre-wrap text-sm leading-relaxed text-ink">{reply.answer}</p>
+          ) : reply ? (
+            <div className="max-w-3xl rounded-xl bg-white/70 p-4"><ReplyBody reply={reply} /></div>
+          ) : (
+            <p className="max-w-3xl text-sm leading-relaxed text-ink">
+              AI-written recommendations always appear in a gold dashed panel like this one, separate from the facts above.{" "}
+              {ai?.configured ? "Nothing has been generated yet." : "No AI provider is connected, so no recommendation has been generated."}
+            </p>
+          )}
+          {ai?.configured && a.total > 0 && (
+            <button type="button" className={`${btn.primary} mt-4`} disabled={asking} onClick={recommend}>
+              <Icon name="spark" size={16} /> {asking ? "Asking the AI…" : reply ? "Regenerate recommendations" : "Generate recommendations"}
+            </button>
+          )}
         </section>
       </div>
     </>
@@ -510,9 +579,10 @@ export function Insights({ a }: PageProps) {
 
 /* ───────────────────────────── Settings ───────────────────────────── */
 
-export function Settings({ rows, onLogout }: PageProps & { onLogout: () => void }) {
+export function Settings({ rows, demo, settings, onLogout }: PageProps & { settings: AdminSettings | null; onLogout: () => void }) {
   const [copied, setCopied] = useState(false);
-  const link = "https://punjab-family-getaway.<your-subdomain>.workers.dev";
+  const link = demo ? "https://punjab-family-getaway.<your-subdomain>.workers.dev" : `${window.location.origin}/`;
+  const ai = settings?.ai;
   const line = (k: string, v: ReactNode) => (
     <div className="flex items-baseline justify-between gap-4 py-2.5 text-sm"><dt className="text-muted">{k}</dt><dd className="text-right font-medium text-ink">{v}</dd></div>
   );
@@ -534,21 +604,39 @@ export function Settings({ rows, onLogout }: PageProps & { onLogout: () => void 
                 <Icon name={copied ? "check" : "copy"} size={16} /> {copied ? "Copied" : "Copy"}
               </button>
             </div>
-            <p className="mt-2 text-xs text-muted">Placeholder – your real link is created when the app is deployed.</p>
+            {demo && <p className="mt-2 text-xs text-muted">Placeholder – your real link is created when the app is deployed.</p>}
           </Card>
-          <Card title="AI Trip Assistant" action={<Pill tone="muted">Not configured</Pill>}>
-            <p className="text-sm leading-relaxed text-ink">The dashboard and all analytics work without AI. To switch the assistant on later, set a provider and its key as server secrets – keys are never placed in the browser.</p>
-            <dl className="mt-3 divide-y divide-sand/60 font-mono text-xs">
-              {line("AI_PROVIDER", "none · anthropic · gemini")}{line("ANTHROPIC_API_KEY", "not set")}{line("GEMINI_API_KEY", "not set")}
+          <Card title="AI Trip Assistant" action={<Pill tone={ai?.configured ? "forest" : "muted"}>{ai?.configured ? "Connected" : "Not configured"}</Pill>}>
+            <p className="text-sm leading-relaxed text-ink">
+              {ai?.configured
+                ? "The assistant sends anonymised survey data to the provider below. Names and contact numbers are never sent."
+                : "The dashboard and all analytics work without AI. To switch the assistant on, set a provider and its key as Worker secrets – keys are never placed in the browser."}
+            </p>
+            <dl className="mt-3 divide-y divide-sand/60 text-xs">
+              {line("Provider (AI_PROVIDER)", ai?.provider ?? "none")}
+              {ai?.model ? line("Model", ai.model) : null}
+              {ai?.note ? line("Status", ai.note) : null}
             </dl>
           </Card>
         </div>
-        <Card title="Data and backup" subtitle={`${rows.length} responses stored`}>
-          <p className="text-sm leading-relaxed text-ink">Export everything as CSV from Family Responses at any time. A full database backup command is included in the deployment guide.</p>
+        <Card title="Data and backup" subtitle={`${rows.length} response${rows.length === 1 ? "" : "s"} stored`}>
+          <p className="text-sm leading-relaxed text-ink">Export everything as CSV from Family Responses at any time. For a full database backup run <code className="rounded bg-cream px-1.5 py-0.5 text-xs">npm run db:backup</code> (see the README).</p>
         </Card>
         <Card title="Administrator session">
           <p className="text-sm leading-relaxed text-ink">You are signed in as the trip administrator. Sessions end automatically after 12 hours.</p>
           <button type="button" className={`${btn.ghost} mt-4`} onClick={onLogout}><Icon name="logout" size={16} /> Log out</button>
+        </Card>
+        <Card title="Recent administrator changes" subtitle="Field names only – values are never logged" className="lg:col-span-2">
+          {!settings?.audit.length ? <p className="text-sm text-muted">No edits, deletions or exports yet.</p> : (
+            <ul className="divide-y divide-sand/60 text-sm">
+              {settings.audit.map((e, i) => (
+                <li key={i} className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 py-2.5">
+                  <span><Pill tone={e.action === "delete" ? "rose" : e.action === "export" ? "gold" : "forest"}>{e.action}</Pill> <span className="ml-1 text-ink">{e.changed_fields.join(", ") || "response removed"}</span></span>
+                  <span className="text-xs text-muted">{when(e.created_at)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
         </Card>
       </div>
     </>

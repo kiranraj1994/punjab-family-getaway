@@ -1,0 +1,11 @@
+# Local development secrets. Copy to .dev.vars (git-ignored) and edit.
+# In production set the same names with:  npx wrangler secret put NAME
+ADMIN_PASSWORD=change-me-to-a-long-passphrase
+SESSION_SECRET=replace-with-at-least-32-random-characters-xxxxxxxx
+
+# Optional AI assistant. Leave AI_PROVIDER=none to run without any AI key.
+AI_PROVIDER=none
+ANTHROPIC_API_KEY=
+ANTHROPIC_MODEL=claude-haiku-5-5
+GEMINI_API_KEY=
+GEMINI_MODEL=gemini-2.5-flash

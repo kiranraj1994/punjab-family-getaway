@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { computeAnalytics } from "../shared/analytics";
 import { ALL_ACTIVITIES } from "../shared/trip";
 import { DEMO_RESPONSES } from "../src/admin/demo";
-import { toCsv } from "../src/lib/csv";
+import { toCsv } from "../shared/csv";
 
 describe("analytics", () => {
   it("handles zero responses without inventing figures", () => {

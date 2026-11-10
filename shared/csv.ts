@@ -1,7 +1,7 @@
 import {
   ACCOMMODATION_BUDGETS, ACCOMMODATION_TYPES, ACTIVITY_BUDGETS, CATEGORIES, CHANDIGARH_OPTIONS,
   DATE_OPTIONS, FACILITIES, PACE_OPTIONS, activityTitle, labelOf, type SurveyResponse,
-} from "@shared/trip";
+} from "./trip";
 
 /** Quote a cell and neutralise spreadsheet formula injection (cells starting with = + - @). */
 function cell(value: unknown): string {
@@ -13,7 +13,7 @@ function cell(value: unknown): string {
 export function toCsv(rows: SurveyResponse[]): string {
   const header = [
     "Submission ID", "Submitted at", "Name", "Contact", "Dates", "Accommodation", "Room budget", "Facilities",
-    "Accommodation notes", ...CATEGORIES.map((c) => c.shortTitle), "Chandigarh", "Pace", "Activity budget",
+    "Accommodation notes", ...CATEGORIES.map((c) => c.shortTitle), "Chandigarh preference", "Pace", "Activity budget",
     "Top 3 priorities", "Suggestions", "Child & family needs", "Suggested properties",
   ];
   const lines = rows.map((r) =>
