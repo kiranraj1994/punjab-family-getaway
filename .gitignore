@@ -1,0 +1,8 @@
+node_modules
+dist
+dist-preview
+.wrangler
+.dev.vars
+.env
+*.local
+backup*.sql
