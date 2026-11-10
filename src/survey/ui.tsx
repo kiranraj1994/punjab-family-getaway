@@ -112,7 +112,7 @@ export function ActivityCard({ activity, on, onToggle }: { activity: Activity; o
       }`}
     >
       <div className="relative w-[34%] shrink-0 sm:w-full">
-        <Photo id={activity.id} alt={activity.title} scene={activity.scene} tone={activity.tone} className="h-full min-h-32 sm:aspect-[4/3] sm:h-auto [&>svg]:transition-transform [&>svg]:duration-700 group-hover:[&>svg]:scale-105 [&>img]:transition-transform [&>img]:duration-700 group-hover:[&>img]:scale-105" />
+        <Photo id={activity.id} width={640} alt={activity.title} scene={activity.scene} tone={activity.tone} className="h-full min-h-32 sm:aspect-[4/3] sm:h-auto [&>svg]:transition-transform [&>svg]:duration-700 group-hover:[&>svg]:scale-105 [&>img]:transition-transform [&>img]:duration-700 group-hover:[&>img]:scale-105" />
         <div className={`absolute inset-0 transition-colors duration-300 ${on ? "bg-forest-900/35" : "bg-transparent"}`} />
         {activity.note && (
           <span className="absolute bottom-2 left-2 right-2 hidden w-fit rounded-full bg-ivory/95 px-2.5 py-1 text-[11px] font-semibold text-forest-900 sm:block">{activity.note}</span>

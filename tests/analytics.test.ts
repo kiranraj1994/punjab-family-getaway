@@ -44,3 +44,17 @@ describe("analytics", () => {
     expect(lines[1]).toContain(`"'=HYPERLINK(""x"")"`);
   });
 });
+
+import { PHOTOS, photoCredits, photoUrl } from "../src/lib/photos";
+
+describe("photos", () => {
+  it("every photo key is a real image slot and builds a Commons URL", () => {
+    const slots = new Set(["hero", "login", "thanks", ...ALL_ACTIVITIES.map((a) => a.id)]);
+    for (const id of Object.keys(PHOTOS)) {
+      expect(slots.has(id), id).toBe(true);
+      expect(photoUrl(id)).toMatch(/^https:\/\/commons\.wikimedia\.org\/wiki\/Special:FilePath\/[^ ]+\?width=960$/);
+    }
+    expect(photoUrl("pitex")).toBeUndefined();
+    expect(photoCredits().length).toBeGreaterThan(15);
+  });
+});

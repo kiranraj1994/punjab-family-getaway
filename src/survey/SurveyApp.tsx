@@ -7,6 +7,7 @@ import {
 } from "@shared/trip";
 import { Icon, type IconName } from "../components/Icon";
 import { Photo } from "../components/Photo";
+import { photoCredits } from "../lib/photos";
 import { submitSurvey } from "../lib/api";
 import { clearDraft, loadDraft, newSubmissionId, saveDraft } from "../lib/draft";
 import { ActivityCard, Chip, ChipGroup, ChoiceGroup, Field, Notice, Question, Select, StepHeader, TextArea, TextInput } from "./ui";
@@ -172,6 +173,8 @@ export default function SurveyApp({ previewLink }: { previewLink?: React.ReactNo
 
 /* ───────────────────────────── Welcome ───────────────────────────── */
 
+const ITINERARY_NOTE = "Once everyone has submitted their preferences, the final itinerary will be shared with the whole family.";
+
 const FACTS: { icon: IconName; label: string }[] = [
   { icon: "calendar", label: TRIP.dates },
   { icon: "pin", label: TRIP.destination },
@@ -183,7 +186,7 @@ const FACTS: { icon: IconName; label: string }[] = [
 function Welcome({ onStart, resumed, previewLink }: { onStart: () => void; resumed: boolean; previewLink?: React.ReactNode }) {
   return (
     <div className="relative flex min-h-dvh flex-col bg-forest-950 text-ivory">
-      <Photo id="hero" alt="The Golden Temple illuminated at night, reflected in the sarovar" scene="temple" eager className="!absolute inset-x-0 top-0 h-[58dvh] w-full sm:left-[36%] sm:h-full sm:w-[64%]" />
+      <Photo id="hero" alt="The Golden Temple illuminated at night, reflected in the sarovar" scene="temple" eager width={1600} className="!absolute inset-x-0 top-0 h-[58dvh] w-full sm:left-[36%] sm:h-full sm:w-[64%]" />
       <div className="absolute inset-0 bg-gradient-to-b from-forest-950/50 via-forest-950/10 via-30% to-forest-950 to-[58dvh] sm:via-forest-950/30 sm:via-40% sm:to-forest-950/95 sm:to-100%" />
       <div className="absolute inset-y-0 left-[36%] right-0 hidden bg-gradient-to-r from-forest-950 via-forest-950/30 to-transparent sm:block" />
       <div className="relative z-10 mx-auto flex w-full max-w-5xl flex-1 flex-col px-6 pb-10 pt-7 sm:px-10 sm:pb-16">
@@ -218,6 +221,11 @@ function Welcome({ onStart, resumed, previewLink }: { onStart: () => void; resum
             </button>
             <p className="text-sm text-ivory/70">Takes about 5 minutes · No login needed</p>
           </div>
+          <p className="mt-7 flex max-w-xl animate-rise items-start gap-2.5 rounded-2xl border border-gold-300/30 bg-gold-300/10 px-4 py-3 text-sm leading-relaxed text-ivory/90 backdrop-blur-sm [animation-delay:400ms]">
+            <Icon name="info" size={17} className="mt-0.5 text-gold-300" />
+            <span>{ITINERARY_NOTE}</span>
+          </p>
+          <PhotoCredits className="mt-5 text-ivory/60 hover:text-ivory" />
         </div>
       </div>
     </div>
@@ -432,6 +440,7 @@ function ReviewStep({ data, set, onEdit, honeypot, setHoneypot, error }: StepPro
   return (
     <div className="mx-auto max-w-3xl">
       <StepHeader eyebrow="Review & submit" title="One last look" intro="Check your answers, add your name and send them to the family planners. Only the organiser can see what you submit." />
+      <Notice>{ITINERARY_NOTE}</Notice>
       <div className="stagger grid gap-5">
         <ReviewCard title="Travel dates" onEdit={() => onEdit("dates")}>
           <Row label="Joining">{labelOf(DATE_OPTIONS, data.date_confirmation)}</Row>
@@ -512,7 +521,7 @@ function ReviewStep({ data, set, onEdit, honeypot, setHoneypot, error }: StepPro
 function ThankYou({ name, onRestart }: { name: string; onRestart: () => void }) {
   return (
     <div className="relative flex min-h-dvh items-center justify-center bg-forest-950 px-6 py-16 text-center text-ivory">
-      <Photo id="thanks" alt="Winter fields in the Punjab countryside" scene="fields" className="!absolute inset-0 h-full w-full opacity-40" />
+      <Photo id="thanks" alt="Winter fields in the Punjab countryside" scene="fields" width={1600} className="!absolute inset-0 h-full w-full opacity-40" />
       <div className="absolute inset-0 bg-gradient-to-b from-forest-950/80 to-forest-950/95" />
       <div className="relative z-10 max-w-xl animate-rise">
         <span className="mx-auto mb-7 flex h-20 w-20 animate-pop items-center justify-center rounded-full bg-gold-400 text-forest-950 shadow-lift">
@@ -520,11 +529,53 @@ function ThankYou({ name, onRestart }: { name: string; onRestart: () => void }) 
         </span>
         <h1 className="font-display text-6xl font-semibold">Thank You{name.trim() ? `, ${name.trim().split(/\s+/)[0]}` : ""}!</h1>
         <p className="mt-5 text-lg leading-relaxed text-ivory/90">Your preferences have been recorded. Together, let's make this Punjab family trip unforgettable!</p>
+        <p className="mx-auto mt-6 max-w-md rounded-2xl border border-ivory/15 bg-ivory/10 px-5 py-4 text-base leading-relaxed text-ivory backdrop-blur-sm">
+          <span className="mb-1 block text-xs font-semibold uppercase tracking-[0.18em] text-gold-300">What happens next</span>
+          {ITINERARY_NOTE}
+        </p>
         <p className="mx-auto mt-8 w-fit rounded-full border border-gold-300/40 bg-gold-300/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-gold-200">UI preview – this response was not saved</p>
         <button type="button" onClick={onRestart} className="mt-8 block w-full text-sm font-medium text-ivory/70 underline underline-offset-4 hover:text-ivory">
           Someone else on this phone? Start a new response
         </button>
       </div>
     </div>
+  );
+}
+
+/* ───────────────────────────── Photo credits ───────────────────────────── */
+
+function PhotoCredits({ className = "" }: { className?: string }) {
+  const [open, setOpen] = useState(false);
+  const credits = useMemo(photoCredits, []);
+  return (
+    <>
+      <button type="button" onClick={() => setOpen(true)} className={`text-xs font-medium underline underline-offset-4 ${className}`}>
+        Photo credits
+      </button>
+      {open && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-6" role="dialog" aria-modal="true" aria-label="Photo credits">
+          <div className="absolute inset-0 animate-fade bg-forest-950/60 backdrop-blur-sm" onClick={() => setOpen(false)} />
+          <div className="relative flex max-h-[85dvh] w-full animate-rise flex-col overflow-hidden rounded-t-3xl bg-ivory text-ink shadow-lift sm:max-w-lg sm:rounded-3xl">
+            <div className="flex items-center justify-between border-b border-sand px-6 py-4">
+              <h2 className="font-display text-2xl font-semibold text-forest-900">Photo credits</h2>
+              <button type="button" onClick={() => setOpen(false)} aria-label="Close" className="rounded-full p-2 text-muted hover:bg-cream hover:text-forest-900">
+                <Icon name="x" size={18} />
+              </button>
+            </div>
+            <div className="overflow-y-auto px-6 py-4">
+              <p className="mb-3 text-sm leading-relaxed text-muted">Photographs are from Wikimedia Commons and are used under the free licence shown on each photo's page. Pictures without a photograph are illustrations.</p>
+              <ul className="divide-y divide-sand/70 text-sm">
+                {credits.map((c) => (
+                  <li key={c.page} className="flex items-baseline justify-between gap-3 py-2.5">
+                    <a href={c.page} target="_blank" rel="noreferrer" className="font-medium text-forest-800 underline decoration-sand underline-offset-4 hover:decoration-gold-400">{c.subject}</a>
+                    <span className="shrink-0 text-right text-muted">{c.author}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

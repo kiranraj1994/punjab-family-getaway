@@ -101,7 +101,7 @@ function Login({ onEnter, onSurvey }: { onEnter: () => void; onSurvey: () => voi
   return (
     <div className="grid min-h-dvh bg-ivory lg:grid-cols-2">
       <div className="relative hidden lg:block">
-        <Photo id="login" alt="The Golden Temple at night" scene="temple" className="!absolute inset-0 h-full w-full" />
+        <Photo id="login" alt="The Golden Temple at night" scene="temple" width={1280} className="!absolute inset-0 h-full w-full" />
         <div className="absolute inset-0 bg-gradient-to-t from-forest-950/90 via-forest-950/20 to-forest-950/40" />
         <p className="absolute bottom-12 left-12 right-12 font-display text-5xl font-semibold leading-tight text-ivory">Every preference,<br />in <span className="italic text-gold-300">one place.</span></p>
       </div>
