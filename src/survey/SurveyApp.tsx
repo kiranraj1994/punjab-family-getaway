@@ -215,6 +215,7 @@ function Welcome({ onStart, resumed, previewLink }: { onStart: () => void; resum
             ))}
           </ul>
           <p className="mt-8 max-w-xl animate-rise text-base leading-relaxed text-ivory/80 [animation-delay:240ms]">{TRIP.intro}</p>
+          <RouteOverview />
           <div className="mt-8 flex animate-rise flex-wrap items-center gap-x-6 gap-y-3 [animation-delay:320ms]">
             <button type="button" onClick={onStart} className="group inline-flex items-center gap-3 rounded-full bg-gold-400 px-8 py-4 text-sm font-bold uppercase tracking-[0.18em] text-forest-950 shadow-lift transition-all hover:bg-gold-300">
               {resumed ? "Continue planning" : "Start planning"}
@@ -228,6 +229,33 @@ function Welcome({ onStart, resumed, previewLink }: { onStart: () => void; resum
           </p>
           <PhotoCredits className="mt-5 text-ivory/60 hover:text-ivory" />
         </div>
+      </div>
+    </div>
+  );
+}
+
+function RouteOverview() {
+  return (
+    <div className="mt-8 max-w-xl animate-rise rounded-2xl border border-ivory/15 bg-ivory/5 p-5 backdrop-blur-sm [animation-delay:280ms]">
+      <p className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-gold-300">
+        <Icon name="map" size={15} /> Trip overview
+      </p>
+      <div className="flex items-center gap-3 text-sm font-medium text-ivory">
+        <span className="inline-flex items-center gap-1.5">
+          <Icon name="pin" size={15} className="text-gold-300" /> {TRIP.start}
+        </span>
+        <span className="h-px flex-1 border-t border-dashed border-ivory/30" />
+        <Icon name="route" size={15} className="text-ivory/60" />
+        <span className="h-px flex-1 border-t border-dashed border-ivory/30" />
+        <span className="inline-flex items-center gap-1.5">
+          <Icon name="pin" size={15} className="text-gold-300" /> {TRIP.destination}
+        </span>
+      </div>
+      <p className="mt-2 text-xs text-ivory/70">via {TRIP.routeVia}</p>
+      <div className="mt-4 flex flex-wrap gap-4 text-sm text-ivory/90">
+        <span className="inline-flex items-center gap-1.5"><Icon name="route" size={14} className="text-gold-300" /> {TRIP.routeDistance}</span>
+        <span className="inline-flex items-center gap-1.5"><Icon name="calendar" size={14} className="text-gold-300" /> {TRIP.routeDuration}</span>
+        <span className="inline-flex items-center gap-1.5"><Icon name="car" size={14} className="text-gold-300" /> {TRIP.vehicles} · {TRIP.vehicleDetail}</span>
       </div>
     </div>
   );
@@ -270,6 +298,13 @@ function ActivityStep({ category, data, set, toggle }: StepProps & { category: A
     <div>
       <StepHeader eyebrow={category.eyebrow} title={category.title} intro={category.intro} />
       {category.notice && <Notice>{category.notice}</Notice>}
+      {category.key === "chandigarh_activities" && (
+        <div className="mb-8 rounded-2xl border-2 border-gold-400 bg-gold-100 p-5 shadow-lift">
+          <Question label="Would you like to include Chandigarh? (Answer this first)">
+            <ChoiceGroup label="Include Chandigarh" options={CHANDIGARH_OPTIONS} value={data.chandigarh_preference} onChange={(v) => set("chandigarh_preference", v)} columns={2} />
+          </Question>
+        </div>
+      )}
       <div className="mb-5 flex items-center justify-between text-sm">
         <p className="font-medium text-forest-800" aria-live="polite">
           {selected.length === 0 ? "Nothing selected yet" : `${selected.length} of ${category.activities.length} selected`}
@@ -285,13 +320,6 @@ function ActivityStep({ category, data, set, toggle }: StepProps & { category: A
           <ActivityCard key={a.id} activity={a} on={selected.includes(a.id)} onToggle={() => toggle(category.key, a.id)} />
         ))}
       </div>
-      {category.key === "chandigarh_activities" && (
-        <div className="mx-auto mt-14 max-w-3xl">
-          <Question label="Would you like to include Chandigarh?">
-            <ChoiceGroup label="Include Chandigarh" options={CHANDIGARH_OPTIONS} value={data.chandigarh_preference} onChange={(v) => set("chandigarh_preference", v)} columns={2} />
-          </Question>
-        </div>
-      )}
     </div>
   );
 }

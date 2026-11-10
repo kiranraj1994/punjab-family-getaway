@@ -66,6 +66,9 @@ export const TRIP = {
   vehicleDetail: "2 Tata Altroz and 1 Hyundai i20",
   nights: "3 Nights",
   rooms: "4 rooms or one entire villa",
+  routeVia: "Delhi–Amritsar–Katra Expressway (NE-5)",
+  routeDistance: "~450 km",
+  routeDuration: "~7 hrs drive",
 } as const;
 
 export const DATE_OPTIONS: Option[] = [
