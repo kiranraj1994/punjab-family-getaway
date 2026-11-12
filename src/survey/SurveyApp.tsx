@@ -193,7 +193,7 @@ function Welcome({ onStart, resumed, previewLink }: { onStart: () => void; resum
       <div className="relative z-10 mx-auto flex w-full max-w-5xl flex-1 flex-col px-6 pb-10 pt-7 sm:px-10 sm:pb-16">
         <div className="flex animate-fade items-center justify-between gap-3">
           <p className="whitespace-nowrap font-display text-base tracking-wide text-ivory/90 sm:text-lg">
-            Family Road Trip <span className="mx-1 text-gold-300 sm:mx-2">·</span> Dec 2026
+            Family Road Trip <span className="mx-1 text-gold-300 sm:mx-2">·</span> 10–13 Dec 2026
           </p>
           {previewLink}
         </div>
@@ -266,7 +266,7 @@ function RouteOverview() {
 function DatesStep({ data, set }: StepProps) {
   return (
     <div className="mx-auto max-w-2xl">
-      <StepHeader eyebrow="Travel dates" title="Can you join the trip from 3–6 December 2026?" intro={`We set off from ${TRIP.start} on Thursday 3 December and return on Sunday 6 December.`} />
+      <StepHeader eyebrow="Travel dates" title="Can you join the trip from 10–13 December 2026?" intro={`We set off from ${TRIP.start} on Thursday 10 December and return on Sunday 13 December.`} />
       <ChoiceGroup label="Date confirmation" options={DATE_OPTIONS} value={data.date_confirmation} onChange={(v) => set("date_confirmation", v)} />
     </div>
   );

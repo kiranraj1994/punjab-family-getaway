@@ -25,7 +25,7 @@ describe("public survey", () => {
   it("opens on the welcome screen with the trip facts", () => {
     render(<SurveyApp />);
     expect(screen.getByRole("heading", { name: /punjab family getaway 2026/i })).toBeInTheDocument();
-    expect(screen.getByText("3–6 December 2026")).toBeInTheDocument();
+    expect(screen.getByText("10–13 December 2026")).toBeInTheDocument();
     expect(screen.getByText("11 Adults + 1 Little Traveller")).toBeInTheDocument();
   });
 
@@ -33,7 +33,7 @@ describe("public survey", () => {
     await start();
     await next();
     expect(screen.getByRole("alert")).toHaveTextContent(/whether you can join/i);
-    await userEvent.click(screen.getByRole("radio", { name: /prefer 4–6/i }));
+    await userEvent.click(screen.getByRole("radio", { name: /prefer 11–13/i }));
     await next();
     expect(screen.getByRole("heading", { name: /where should we stay/i })).toBeInTheDocument();
   });

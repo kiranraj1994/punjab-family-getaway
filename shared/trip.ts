@@ -56,7 +56,7 @@ export const TRIP = {
   subtitle: "Four days of family, culture, food and unforgettable experiences.",
   intro:
     "We're planning a family road trip to Punjab! Help us choose the experiences, accommodation and activities everyone would enjoy.",
-  dates: "3–6 December 2026",
+  dates: "10–13 December 2026",
   destination: "Amritsar, Punjab",
   optionalDestination: "Chandigarh",
   start: "Ashram, New Delhi",
@@ -72,9 +72,9 @@ export const TRIP = {
 } as const;
 
 export const DATE_OPTIONS: Option[] = [
-  { id: "all-four-days", label: "Yes – all four days", hint: "3–6 December" },
-  { id: "prefer-4-6", label: "Prefer 4–6 December" },
-  { id: "prefer-3-5", label: "Prefer 3–5 December" },
+  { id: "all-four-days", label: "Yes – all four days", hint: "10–13 December" },
+  { id: "prefer-4-6", label: "Prefer 11–13 December" },
+  { id: "prefer-3-5", label: "Prefer 10–12 December" },
   { id: "not-sure", label: "Not sure yet" },
   { id: "cannot-join", label: "Cannot join" },
 ];

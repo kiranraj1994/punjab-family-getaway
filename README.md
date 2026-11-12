@@ -1,6 +1,6 @@
 # Punjab Family Getaway 2026
 
-A small full-stack app for planning the family's Amritsar / Punjab trip (3–6 December 2026):
+A small full-stack app for planning the family's Amritsar / Punjab trip (10–13 December 2026):
 a public survey that collects everyone's preferences, and a private admin dashboard with
 analytics, CSV export and an optional AI assistant for the organiser.
 
